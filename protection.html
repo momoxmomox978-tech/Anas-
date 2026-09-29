@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>🛡️ نظام الحماية v1.0.0</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Courier New',monospace;-webkit-tap-highlight-color:transparent}
+:root{--bg:#000308;--bg2:#0D1117;--border:#21262d;--text:#fff;--text2:#888;--matrix:#00FF41;--neon:#00E5FF;--gold:#FFD700;--danger:#f44336;--warning:#FF9800}
+html,body{background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;user-select:none;-webkit-user-select:none;position:fixed;width:100%;height:100%}
+#matrixCanvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;opacity:.15;pointer-events:none}
+
+/* Screens */
+.screen{position:fixed;top:0;left:0;width:100%;height:100%;display:none;flex-direction:column;background:linear-gradient(135deg,#000308,#0a1620);z-index:10;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.screen.active{display:flex}
+
+/* Permissions Screen */
+.perm-content{width:100%;max-width:480px;margin:auto;padding:25px 20px;text-align:center}
+.perm-shield{width:140px;height:140px;margin:0 auto 25px;position:relative;display:flex;align-items:center;justify-content:center}
+.perm-shield-inner{width:100%;height:100%;border-radius:50%;background:radial-gradient(circle,rgba(0,255,65,.15),transparent 70%);border:3px solid var(--matrix);box-shadow:0 0 50px var(--matrix),inset 0 0 40px rgba(0,255,65,.2);display:flex;align-items:center;justify-content:center;font-size:70px;animation:shieldPulse 2s infinite}
+@keyframes shieldPulse{0%,100%{transform:scale(1);box-shadow:0 0 50px var(--matrix),inset 0 0 40px rgba(0,255,65,.2)}50%{transform:scale(1.05);box-shadow:0 0 80px var(--matrix),inset 0 0 60px rgba(0,255,65,.3)}}
+.perm-shield::before{content:'';position:absolute;top:-15px;left:-15px;right:-15px;bottom:-15px;border-radius:50%;border:2px dashed rgba(0,255,65,.4);animation:rotateRing 20s linear infinite}
+@keyframes rotateRing{to{transform:rotate(360deg)}}
+.perm-title{font-size:24px;color:var(--matrix);font-weight:bold;margin-bottom:8px;text-shadow:0 0 20px var(--matrix);letter-spacing:1px}
+.perm-sub{font-size:13px;color:#0a5a0a;margin-bottom:25px;letter-spacing:1px}
+.perm-box{background:rgba(0,20,0,.6);border:1px solid rgba(0,255,65,.3);border-radius:15px;padding:20px;text-align:right;margin-bottom:20px;max-height:45vh;overflow-y:auto}
+.perm-box h3{color:var(--matrix);font-size:15px;margin-bottom:12px;text-align:center;border-bottom:1px solid rgba(0,255,65,.2);padding-bottom:10px}
+.perm-box p{color:#8aFF8a;font-size:13px;line-height:1.9;margin-bottom:12px}
+.perm-box ul{list-style:none;padding:0}
+.perm-box li{color:#8aFF8a;font-size:13px;line-height:1.8;padding:6px 0;border-bottom:1px solid rgba(0,255,65,.1)}
+.perm-box li:last-child{border-bottom:none}
+.perm-box li b{color:var(--matrix)}
+.perm-box .warn{background:rgba(255,170,0,.1);border-right:3px solid var(--warning);padding:10px;border-radius:6px;color:#FFAA00;font-size:12px;margin-top:12px}
+.perm-actions{display:flex;flex-direction:column;gap:10px}
+.perm-btn{padding:16px;border-radius:12px;border:none;font-size:15px;font-weight:bold;cursor:pointer;font-family:inherit;letter-spacing:1px;transition:transform .15s}
+.perm-btn:active{transform:scale(.97)}
+.perm-btn.accept{background:linear-gradient(135deg,#00FF41,#00AA2A);color:#000;box-shadow:0 0 30px rgba(0,255,65,.5)}
+.perm-btn.reject{background:rgba(255,51,102,.15);color:#FF3366;border:1px solid #FF3366}
+.perm-check{display:flex;align-items:center;gap:10px;padding:12px;background:rgba(0,20,0,.5);border:1px solid rgba(0,255,65,.3);border-radius:10px;cursor:pointer;margin-bottom:15px;text-align:right}
+.perm-check.checked{border-color:var(--matrix);background:rgba(0,255,65,.1)}
+.perm-checkbox{width:24px;height:24px;border:2px solid rgba(0,255,65,.5);border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.perm-check.checked .perm-checkbox{background:var(--matrix);border-color:var(--matrix)}
+.perm-check.checked .perm-checkbox::after{content:'✓';color:#000;font-weight:bold;font-size:15px}
+.perm-check-label{font-size:13px;color:var(--matrix);flex:1}
+
+/* Scan Screen */
+.scan-content{width:100%;max-width:480px;margin:auto;padding:25px 20px;text-align:center}
+.scan-icon{font-size:100px;animation:scanPulse 1.5s infinite;margin-bottom:20px;filter:drop-shadow(0 0 30px var(--neon))}
+@keyframes scanPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+.scan-title{font-size:20px;color:var(--neon);font-weight:bold;margin-bottom:10px;text-shadow:0 0 15px var(--neon)}
+.scan-sub{font-size:13px;color:#0a5a0a;margin-bottom:25px}
+.scan-progress{height:8px;background:rgba(0,255,65,.1);border:1px solid var(--matrix);border-radius:5px;overflow:hidden;margin-bottom:15px}
+.scan-progress-bar{height:100%;background:linear-gradient(90deg,#00FF41,#00E5FF);width:0%;transition:width .3s;box-shadow:0 0 15px var(--matrix)}
+.scan-percent{font-size:16px;color:var(--matrix);font-weight:bold;margin-bottom:20px}
+.scan-log{background:#000;border:1px solid rgba(0,255,65,.3);border-radius:10px;padding:15px;text-align:right;font-size:12px;color:var(--matrix);height:200px;overflow-y:auto;line-height:1.8}
+.scan-log-line{margin-bottom:4px;opacity:0;animation:fadeIn .3s forwards}
+@keyframes fadeIn{to{opacity:1}}
+.scan-log-line.warn{color:#FFAA00}
+.scan-log-line.danger{color:#FF3366}
+.scan-log-line.ok{color:#00FF41}
+.scan-log-line.info{color:#00E5FF}
+
+/* Result Screen */
+.result-content{width:100%;max-width:480px;margin:auto;padding:25px 20px;text-align:center}
+.result-icon{font-size:120px;margin-bottom:20px;animation:resultPop .6s}
+@keyframes resultPop{from{transform:scale(0)}to{transform:scale(1)}}
+.result-title{font-size:26px;font-weight:bold;margin-bottom:12px;letter-spacing:1px}
+.result-title.safe{color:var(--matrix);text-shadow:0 0 20px var(--matrix)}
+.result-title.danger{color:#FF3366;text-shadow:0 0 20px #FF3366}
+.result-message{background:rgba(0,20,0,.5);border:1px solid rgba(0,255,65,.3);border-radius:12px;padding:20px;text-align:right;font-size:14px;line-height:1.9;color:#8aFF8a;margin-bottom:20px}
+.result-message.danger{background:rgba(255,51,102,.1);border-color:#FF3366;color:#ffb0b0}
+.result-message h4{color:var(--matrix);margin-bottom:10px;font-size:15px}
+.result-message.danger h4{color:#FF3366}
+.result-message ul{list-style:none;padding:0;margin-top:10px}
+.result-message li{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:13px}
+.result-message li:last-child{border-bottom:none}
+.result-message b{color:var(--neon)}
+.result-btn{padding:16px 40px;border-radius:12px;border:none;font-size:15px;font-weight:bold;cursor:pointer;font-family:inherit;margin-top:10px;letter-spacing:1px}
+.result-btn.safe{background:linear-gradient(135deg,#00FF41,#00AA2A);color:#000;box-shadow:0 0 30px rgba(0,255,65,.5)}
+.result-btn.danger{background:linear-gradient(135deg,#FF3366,#c62828);color:#fff;box-shadow:0 0 30px rgba(255,51,102,.5)}
+.result-btn:active{transform:scale(.97)}
+
+/* Protection Screen */
+.protect-content{width:100%;max-width:480px;margin:auto;padding:25px 20px;text-align:center}
+.protect-shield{width:160px;height:160px;margin:0 auto 25px;border-radius:50%;background:radial-gradient(circle,rgba(0,255,65,.2),transparent 70%);border:4px solid var(--matrix);box-shadow:0 0 60px var(--matrix);display:flex;align-items:center;justify-content:center;font-size:80px;animation:shieldPulse 2s infinite}
+.protect-title{font-size:22px;color:var(--matrix);font-weight:bold;margin-bottom:8px;text-shadow:0 0 15px var(--matrix)}
+.protect-sub{font-size:13px;color:#0a5a0a;margin-bottom:25px}
+.protect-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.protect-stat{background:rgba(0,20,0,.5);border:1px solid rgba(0,255,65,.3);border-radius:10px;padding:12px;text-align:center}
+.protect-stat-icon{font-size:24px;margin-bottom:5px}
+.protect-stat-value{color:var(--matrix);font-size:18px;font-weight:bold}
+.protect-stat-label{color:#0a5a0a;font-size:10px;margin-top:3px}
+.protect-log{background:#000;border:1px solid rgba(0,255,65,.3);border-radius:10px;padding:12px;text-align:right;font-size:11px;color:var(--matrix);max-height:180px;overflow-y:auto;line-height:1.7;margin-bottom:15px}
+.protect-log-line{margin-bottom:3px}
+.protect-log-line.danger{color:#FF3366}
+.protect-log-line.warn{color:#FFAA00}
+.protect-log-line.ok{color:#00FF41}
+
+/* Toast */
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--matrix);color:#000;padding:12px 22px;border-radius:25px;font-size:13px;font-weight:bold;z-index:99999;opacity:0;transition:all .3s;max-width:90%;text-align:center;font-family:inherit}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.error{background:#FF3366;color:#fff}
+.toast.info{background:#00E5FF;color:#000}
+.toast.warn{background:#FFAA00;color:#000}
+</style>
+</head>
+<body>
+<canvas id="matrixCanvas"></canvas>
+
+<!-- ==================== Permissions Screen ==================== -->
+<div class="screen active" id="permScreen">
+<div class="perm-content">
+<div class="perm-shield">
+<div class="perm-shield-inner">🛡️</div>
+</div>
+<div class="perm-title">نظام الحماية</div>
+<div class="perm-sub">SYSTEM SECURITY v1.0.0</div>
+
+<div class="perm-box">
+<h3>⚠️ صلاحيات الوصول</h3>
+<p>لتشغيل نظام الحماية، يحتاج التطبيق إلى:</p>
+<ul>
+<li><b>🔍 فحص الملفات:</b> للتحقق من سلامة الملفات على جهازك</li>
+<li><b>🌐 الوصول للشبكة:</b> لفحص التهديدات الأمنية</li>
+<li><b>📊 حالة النظام:</b> لمراقبة أداء الحماية</li>
+<li><b>🛡️ حماية فورية:</b> لصد أي تهديد محتمل</li>
+<li><b>💾 قراءة البيانات:</b> لتحليل الملفات المشبوهة</li>
+</ul>
+<div class="warn">⚠️ <b>تنبيه:</b> إذا وافقت، سيتم فحص جهازك والتحقق من سلامته. إذا وُجد أي تهديد، سيتم إخطارك فوراً.</div>
+</div>
+
+<div class="perm-check" id="permCheck" onclick="togglePerm()">
+<div class="perm-checkbox"></div>
+<div class="perm-check-label">أوافق على جميع الشروط ومنح وصول لصلاحيات النظام</div>
+</div>
+
+<div class="perm-actions">
+<button class="perm-btn accept" onclick="acceptPerm()">✅ موافق، ابدأ الفحص</button>
+<button class="perm-btn reject" onclick="rejectPerm()">❌ رفض</button>
+</div>
+</div>
+</div>
+
+<!-- ==================== Scan Screen ==================== -->
+<div class="screen" id="scanScreen">
+<div class="scan-content">
+<div class="scan-icon">🔍</div>
+<div class="scan-title">جاري فحص النظام</div>
+<div class="scan-sub">SCANNING SYSTEM FOR THREATS...</div>
+<div class="scan-progress"><div class="scan-progress-bar" id="scanBar"></div></div>
+<div class="scan-percent" id="scanPercent">0%</div>
+<div class="scan-log" id="scanLog"></div>
+</div>
+</div>
+
+<!-- ==================== Result Screen ==================== -->
+<div class="screen" id="resultScreen">
+<div class="result-content">
+<div class="result-icon" id="resultIcon">🛡️</div>
+<div class="result-title safe" id="resultTitle">النظام آمن</div>
+<div class="result-message" id="resultMessage"></div>
+<button class="result-btn safe" id="resultBtn" onclick="goToProtection()">🛡️ تفعيل الحماية</button>
+</div>
+</div>
+
+<!-- ==================== Protection Screen ==================== -->
+<div class="screen" id="protectScreen">
+<div class="protect-content">
+<div class="protect-shield">🛡️</div>
+<div class="protect-title">الحماية مفعّلة</div>
+<div class="protect-sub">PROTECTION ACTIVE - v1.0.0</div>
+<div class="protect-stats">
+<div class="protect-stat">
+<div class="protect-stat-icon">🚫</div>
+<div class="protect-stat-value" id="statBlocked">0</div>
+<div class="protect-stat-label">تهديدات مصدودة</div>
+</div>
+<div class="protect-stat">
+<div class="protect-stat-icon">🔍</div>
+<div class="protect-stat-value" id="statScans">1</div>
+<div class="protect-stat-label">عمليات فحص</div>
+</div>
+<div class="protect-stat">
+<div class="protect-stat-icon">⏱️</div>
+<div class="protect-stat-value" id="statTime">00:00</div>
+<div class="protect-stat-label">مدة الحماية</div>
+</div>
+<div class="protect-stat">
+<div class="protect-stat-icon">💚</div>
+<div class="protect-stat-value">100%</div>
+<div class="protect-stat-label">حالة النظام</div>
+</div>
+</div>
+<div class="protect-log" id="protectLog"></div>
+<button class="result-btn safe" onclick="rescan()">🔄 إعادة الفحص</button>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================
+   نظام الحماية v1.0.0
+   المطور: أنس خشان
+   ============================================ */
+
+// Matrix Rain
+var canvas = document.getElementById('matrixCanvas');
+var ctx = canvas.getContext('2d');
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+var chars = '01アイウエオカキクケコサシスセソタチツテトナニヌネノ01ABCDEF🛡️🔒🔍';
+var fontSize = 14;
+var columns = canvas.width / fontSize;
+var drops = [];
+for (var i = 0; i < columns; i++) drops[i] = 1;
+function drawMatrix() {
+  ctx.fillStyle = 'rgba(0,0,0,.06)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#00FF41';
+  ctx.font = fontSize + 'px monospace';
+  for (var i = 0; i < drops.length; i++) {
+    var t = chars.charAt(Math.floor(Math.random() * chars.length));
+    ctx.fillText(t, i * fontSize, drops[i] * fontSize);
+    if (drops[i] * fontSize > canvas.height && Math.random() > .975) drops[i] = 0;
+    drops[i]++;
+  }
+}
+setInterval(drawMatrix, 50);
+
+// State
+var STATE = {
+  permAccepted: false,
+  threatsFound: [],
+  scanCount: 0,
+  blockedCount: 0,
+  startTime: null,
+  protectionActive: false
+};
+
+// Permissions
+function togglePerm() {
+  var c = document.getElementById('permCheck');
+  c.classList.toggle('checked');
+}
+
+function acceptPerm() {
+  if (!document.getElementById('permCheck').classList.contains('checked')) {
+    showToast('⚠️ يجب الموافقة على الشروط أولاً', 'warn');
+    return;
+  }
+  STATE.permAccepted = true;
+  localStorage.setItem('protect_perm', 'true');
+  startScan();
+}
+
+function rejectPerm() {
+  showToast('❌ تم رفض الصلاحيات - لا يمكن تشغيل الحماية', 'error');
+  setTimeout(function() {
+    document.getElementById('permScreen').innerHTML = 
+      '<div style="text-align:center;padding:40px 20px;color:#FF3366">' +
+      '<div style="font-size:100px;margin-bottom:20px">🚫</div>' +
+      '<h2 style="margin-bottom:15px">تم رفض الصلاحيات</h2>' +
+      '<p style="color:#888;font-size:14px;line-height:1.8">لا يمكن تشغيل نظام الحماية بدون صلاحيات.<br>يرجى إعادة تحديث الصفحة والمحاولة مرة أخرى.</p>' +
+      '</div>';
+  }, 500);
+}
+
+// Scan
+var SCAN_STEPS = [
+  { text: '> بدء فحص النظام...', type: 'info', delay: 300 },
+  { text: '> فحص الذاكرة العشوائية...', type: 'info', delay: 400 },
+  { text: '> فحص الملفات الأساسية...', type: 'info', delay: 400 },
+  { text: '> فحص الاتصالات الشبكية...', type: 'info', delay: 400 },
+  { text: '> فحص التطبيقات المثبتة...', type: 'info', delay: 400 },
+  { text: '> فحص صلاحيات الوصول...', type: 'info', delay: 400 },
+  { text: '> فحص السجلات الأمنية...', type: 'info', delay: 400 },
+  { text: '> فحص الثغرات المحتملة...', type: 'info', delay: 400 },
+  { text: '> فحص البرامج الضارة...', type: 'info', delay: 400 },
+  { text: '> فحص الملفات المشبوهة...', type: 'info', delay: 400 },
+  { text: '[✓] الذاكرة سليمة', type: 'ok', delay: 300 },
+  { text: '[✓] الملفات الأساسية آمنة', type: 'ok', delay: 300 },
+  { text: '[✓] الاتصالات مشفرة', type: 'ok', delay: 300 },
+  { text: '[✓] التطبيقات موثوقة', type: 'ok', delay: 300 },
+  { text: '[!] تم اكتشاف نشاط مشبوه!', type: 'warn', delay: 700 },
+  { text: '> تحليل النشاط المشبوه...', type: 'info', delay: 500 },
+  { text: '[!] محاولة وصول غير مصرح بها!', type: 'danger', delay: 700 },
+  { text: '> جاري تحليل المصدر...', type: 'info', delay: 500 },
+  { text: '[✓] تم تحديد المصدر', type: 'ok', delay: 500 }
+];
+
+function startScan() {
+  document.getElementById('permScreen').classList.remove('active');
+  document.getElementById('scanScreen').classList.add('active');
+  document.getElementById('scanLog').innerHTML = '';
+  document.getElementById('scanBar').style.width = '0%';
+  document.getElementById('scanPercent').textContent = '0%';
+  
+  var log = document.getElementById('scanLog');
+  var bar = document.getElementById('scanBar');
+  var percent = document.getElementById('scanPercent');
+  var idx = 0;
+  
+  function processStep() {
+    if (idx >= SCAN_STEPS.length) {
+      setTimeout(showResult, 800);
+      return;
+    }
+    var step = SCAN_STEPS[idx];
+    var div = document.createElement('div');
+    div.className = 'scan-log-line ' + (step.type || '');
+    div.textContent = step.text;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+    
+    var p = Math.round(((idx + 1) / SCAN_STEPS.length) * 100);
+    bar.style.width = p + '%';
+    percent.textContent = p + '%';
+    
+    idx++;
+    setTimeout(processStep, step.delay);
+  }
+  processStep();
+}
+
+function showResult() {
+  document.getElementById('scanScreen').classList.remove('active');
+  document.getElementById('resultScreen').classList.add('active');
+  
+  // تحقق من وجود "فيروس وهمي" (تجريبي)
+  var hasVirus = true; // نجعله دائماً يكتشف للمحاكاة
+  STATE.threatsFound = hasVirus ? ['برنامج تجسس مشبوه', 'محاولة وصول غير مصرح'] : [];
+  
+  var icon = document.getElementById('resultIcon');
+  var title = document.getElementById('resultTitle');
+  var msg = document.getElementById('resultMessage');
+  var btn = document.getElementById('resultBtn');
+  
+  if (hasVirus) {
+    icon.textContent = '⚠️';
+    title.textContent = 'تم اكتشاف تهديد!';
+    title.className = 'result-title danger';
+    msg.className = 'result-message danger';
+    msg.innerHTML = 
+      '<h4>⚠️ تم اكتشاف تهديد أمني</h4>' +
+      '<p>تم العثور على نشاط مشبوه في نظامك. نظام الحماية سيتولى الأمر تلقائياً.</p>' +
+      '<ul>' +
+      '<li>🦠 <b>برنامج تجسس:</b> تم اكتشافه في الذاكرة</li>' +
+      '<li>🚫 <b>محاولة وصول:</b> من مصدر غير مصرح</li>' +
+      '<li>📡 <b>اتصال مشبوه:</b> تم اعتراضه</li>' +
+      '</ul>' +
+      '<p style="margin-top:12px;color:#FF6B35"><b>📢 إشعار:</b> تم نقل التهديد إلى نظام الحماية الخاص بك. سيتم عزله وحذفه فوراً.</p>';
+    btn.textContent = '🛡️ تفعيل الحماية الآن';
+    btn.className = 'result-btn danger';
+    
+    // تحديث حالة
+    STATE.blockedCount = 2;
+  } else {
+    icon.textContent = '✅';
+    title.textContent = 'نظامك آمن';
+    title.className = 'result-title safe';
+    msg.className = 'result-message';
+    msg.innerHTML = 
+      '<h4>✅ لم يتم اكتشاف أي تهديد</h4>' +
+      '<p>جهازك آمن تماماً. لم يتم العثور على أي برامج ضارة أو نشاط مشبوه.</p>' +
+      '<ul>' +
+      '<li>✅ الذاكرة سليمة</li>' +
+      '<li>✅ الملفات آمنة</li>' +
+      '<li>✅ الاتصالات مشفرة</li>' +
+      '</ul>';
+    btn.textContent = '🛡️ تفعيل الحماية';
+    btn.className = 'result-btn safe';
+  }
+}
+
+function goToProtection() {
+  document.getElementById('resultScreen').classList.remove('active');
+  document.getElementById('protectScreen').classList.add('active');
+  STATE.protectionActive = true;
+  STATE.startTime = Date.now();
+  STATE.scanCount++;
+  updateStats();
+  startProtectionLog();
+}
+
+function updateStats() {
+  document.getElementById('statBlocked').textContent = STATE.blockedCount;
+  document.getElementById('statScans').textContent = STATE.scanCount;
+}
+
+var PROTECT_LOGS = [
+  { text: '🛡️ نظام الحماية مفعّل', type: 'ok' },
+  { text: '🔍 مراقبة النظام...', type: 'info' },
+  { text: '✅ الذاكرة محمية', type: 'ok' },
+  { text: '✅ الملفات محمية', type: 'ok' },
+  { text: '⚠️ محاولة وصول مشبوهة!', type: 'warn' },
+  { text: '🛡️ تم صد المحاولة', type: 'ok' },
+  { text: '🚫 تم حظر المصدر', type: 'ok' },
+  { text: '🔍 فحص دوري...', type: 'info' },
+  { text: '✅ النظام آمن', type: 'ok' },
+  { text: '⚠️ نشاط مشبوه!', type: 'warn' },
+  { text: '🛡️ تم عزل التهديد', type: 'ok' },
+  { text: '🗑️ تم حذف التهديد', type: 'ok' },
+  { text: '✅ النظام آمن 100%', type: 'ok' }
+];
+
+function startProtectionLog() {
+  var log = document.getElementById('protectLog');
+  var idx = 0;
+  
+  function addLog() {
+    if (idx >= PROTECT_LOGS.length) {
+      // إعادة من البداية
+      idx = 2;
+    }
+    var item = PROTECT_LOGS[idx];
+    var div = document.createElement('div');
+    div.className = 'protect-log-line ' + (item.type || '');
+    div.textContent = '[' + new Date().toLocaleTimeString('ar-EG') + '] ' + item.text;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+    
+    if (log.children.length > 30) {
+      log.removeChild(log.firstChild);
+    }
+    
+    idx++;
+    
+    var delay = 2000 + Math.random() * 3000;
+    setTimeout(addLog, delay);
+  }
+  addLog();
+}
+
+function rescan() {
+  STATE.scanCount++;
+  updateStats();
+  document.getElementById('protectScreen').classList.remove('active');
+  document.getElementById('permScreen').classList.add('active');
+  document.getElementById('permCheck').classList.remove('checked');
+}
+
+// Timer for protection
+setInterval(function() {
+  if (STATE.protectionActive && STATE.startTime) {
+    var elapsed = Math.floor((Date.now() - STATE.startTime) / 1000);
+    var m = Math.floor(elapsed / 60);
+    var s = elapsed % 60;
+    var display = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+    document.getElementById('statTime').textContent = display;
+  }
+}, 1000);
+
+// Toast
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast';
+  if (type) t.classList.add(type);
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+// Auto restore
+window.addEventListener('load', function() {
+  var perm = localStorage.getItem('protect_perm');
+  if (perm === 'true') {
+    // عرض شاشة الصلاحيات مرة أخرى (لتأكيد)
+    // لا نحفظ الحالة تلقائياً، يجب على المستخدم الموافقة كل مرة
+  }
+});
+
+console.log('%c🛡️ نظام الحماية v1.0.0', 'color:#00FF41;font-size:20px;font-weight:bold');
+console.log('%c👨‍💻 أنس خشان', 'color:#00FF41;font-size:14px');
+console.log('%c📧 momoxmomox978@gmail.com', 'color:#00E5FF;font-size:14px');
+console.log('%c📺 @amn_sirani', 'color:#0088CC;font-size:14px');
+</script>
+</body>
+  </html> 
